@@ -119,7 +119,7 @@ public:
 	 * get the key's value of type T (either 'int', 'float' or 'std::string')
 	 * 
 	 * @warning	if the key doesn't exist your program will crash. use get_opt()
-	 *			if you're unsure wether the key exist or not
+	 *			if you're unsure whether the key does exist or not
 	 * 
 	 * @param sec_name		the key's section
 	 * @param key_name		the key's name
