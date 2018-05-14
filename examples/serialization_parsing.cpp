@@ -24,14 +24,16 @@
 
 #include <iostream>
 
-#include "libini/ini.hpp"
+#include <libini/ini.hpp>
 
 template<class T>
-inline void print(T t) {
+inline void print(T t)
+{
 	std::cout << t << std::endl;
 }
 
-void serialization() {
+void serialization()
+{
 	libini::ini ini;
 	ini.set("", "GlobalKey", 1);
 
@@ -45,7 +47,8 @@ void serialization() {
 	}
 }
 
-void parsing() {
+void parsing()
+{
 	libini::ini ini;
 	if (!ini.parse("my_file.ini")) {
 		print("libini failed parsing!");
@@ -65,7 +68,8 @@ void parsing() {
 	}
 }
 
-int main() {
+int main()
+{
 	serialization();
 	parsing();
 }

@@ -22,20 +22,17 @@
  * THE SOFTWARE.
  */
 
+/**
+ * @file ini.hpp
+ * 
+ * C++ interface for the libini C API.
+ */
+
 #ifndef INI_HPP
 #define INI_HPP
 
 #include <string>
 #include <optional>
-
-#if __has_include(<gsl/gsl>)
-#  include <gsl/gsl>
-#else
-namespace gsl {
-template<class T>
-using owner = T;
-}
-#endif
 
 namespace libini {
 
@@ -48,182 +45,211 @@ extern "C" {
 } // c_api
 
 /**
- * a representation of an .ini file.
+ * a representation of a .ini file.
+ *
  * C++ class wrapper around the C libini api
  */
-class ini {
+class ini
+{
 public:
-	ini() {
-		ini_ = c_api::ini_create();
+	ini()
+	{
+		m_ini = c_api::ini_create();
 	}
 
-	~ini() {
-		c_api::ini_destroy(ini_);
+	~ini()
+	{
+		c_api::ini_destroy(m_ini);
 	}
 
 	ini(const ini& other) = default;
 	ini& operator=(const ini& other) = default;
 
-	ini(ini&& other) noexcept {
-		this->ini_ = std::move(other.ini_);
+	ini(ini&& other) noexcept
+	{
+		this->m_ini = std::move(other.m_ini);
 	}
 
-	ini& operator=(ini&& other) noexcept {
-		this->ini_ = std::move(other.ini_);
+	ini& operator=(ini&& other) noexcept
+	{
+		this->m_ini = std::move(other.m_ini);
 		return *this;
 	}
 
 	/**
-	 * check if the class initialized successfully and if it's ready to be used
+	 * Check whether or not the class initialization succeeded and it's
+	 * ready to be used.
 	 *
-	 * @return true		if everything is ok
+	 * @return true if everything is ok
 	 */
-	constexpr inline bool is_ready() const noexcept {
-		return ini_ != nullptr;
+	constexpr inline bool is_ready() const noexcept
+	{
+		return m_ini != nullptr;
 	}
 
 	/**
-	 * add a unique key with its value
-	 * 
-	 * @param sec_name		the key's section
-	 * @param key_name		the key's name
-	 * @param val			the key's value
-	 */
-	inline void set(const std::string& sec_name, const std::string& key_name, int val) const noexcept {
-		c_api::ini_add_key_i(ini_, sec_name.c_str(), key_name.c_str(), val);
-	}
-
-	/**
-	 * add a unique key with its value
+	 * Add a unique key and its value.
 	 *
-	 * @param sec_name		the key's section
-	 * @param key_name		the key's name
-	 * @param val			the key's value
+	 * @param sec_name  The key's section
+	 * @param key_name  The key's name
+	 * @param val       The key's value
 	 */
-	inline void set(const std::string& sec_name, const std::string& key_name, float val) const noexcept {
-		c_api::ini_add_key_f(ini_, sec_name.c_str(), key_name.c_str(), val);
+	inline void set(const std::string& sec_name, const std::string& key_name, int val) const noexcept
+	{
+		c_api::ini_add_key_i(m_ini, sec_name.c_str(), key_name.c_str(), val);
 	}
 
 	/**
-	 * add a unique key with its value
+	 * Add a unique key with its value.
 	 *
-	 * @param sec_name		the key's section
-	 * @param key_name		the key's name
-	 * @param val			the key's value
+	 * @param sec_name  The key's section
+	 * @param key_name  The key's name
+	 * @param val       The key's value
 	 */
-	inline void set(const std::string& sec_name, const std::string& key_name, const std::string& val) const noexcept {
-		c_api::ini_add_key_str(ini_, sec_name.c_str(), key_name.c_str(), val.c_str());
+	inline void set(const std::string& sec_name, const std::string& key_name, float val) const noexcept
+	{
+		c_api::ini_add_key_f(m_ini, sec_name.c_str(), key_name.c_str(), val);
 	}
 
 	/**
-	 * get the key's value of type T (either 'int', 'float' or 'std::string')
-	 * 
-	 * @warning	if the key doesn't exist your program will crash. use get_opt()
-	 *			if you're unsure wether the key exist or not
-	 * 
-	 * @param sec_name		the key's section
-	 * @param key_name		the key's name
-	 * 
-	 * @return				the key's value
+	 * Add a unique key with its value.
+	 *
+	 * @param sec_name  The key's section
+	 * @param key_name  The key's name
+	 * @param val       The key's value
+	 */
+	inline void set(const std::string& sec_name, const std::string& key_name, const std::string& val) const noexcept
+	{
+		c_api::ini_add_key_str(m_ini, sec_name.c_str(), key_name.c_str(), val.c_str());
+	}
+
+	/**
+	 * Get the key's value of type T.
+	 *
+	 * @warning Make sure the key does exist before calling this function.
+	 *          Use get_opt() if you can't be certain of it.
+	 *
+	 * @param sec_name  The key's section
+	 * @param key_name  The key's name
+	 *
+	 * @tparam T  The key type. Either <code>int</code>, <code>float</code>
+	 *            or <code>std::string</code>
+	 *
+	 * @return The key's value
 	 */
 	template<class T>
-	inline T get(const std::string& sec_name, const std::string& key_name) const noexcept {
+	inline T get(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
 		static_assert(0, "T in get<T> can be only one of the following: 'int', 'float' or 'std::string'");
 	}
 
 	template<>
-	inline int get(const std::string& sec_name, const std::string& key_name) const noexcept {
-		return c_api::ini_get_key_i(ini_, sec_name.c_str(), key_name.c_str());
+	inline int get(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
+		return c_api::ini_get_key_i(m_ini, sec_name.c_str(), key_name.c_str());
 	}
 
 	template<>
-	inline float get(const std::string& sec_name, const std::string& key_name) const noexcept {
-		return c_api::ini_get_key_f(ini_, sec_name.c_str(), key_name.c_str());
+	inline float get(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
+		return c_api::ini_get_key_f(m_ini, sec_name.c_str(), key_name.c_str());
 	}
 
 	template<>
-	inline std::string get(const std::string& sec_name, const std::string& key_name) const noexcept {
+	inline std::string get(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
 		char cstr[INI_STR_MAX_LENGTH];
-		c_api::ini_get_key_str(ini_, sec_name.c_str(), key_name.c_str(), cstr, INI_STR_MAX_LENGTH);
+		c_api::ini_get_key_str(m_ini, sec_name.c_str(), key_name.c_str(), cstr, INI_STR_MAX_LENGTH);
 		return std::string(cstr);
 	}
 
 	/**
-	 * get the key's value of type T (either 'int', 'float' or 'std::string').
-	 * if the key doesn't exist return an empty value
+	 * Get the key's value of type T. If the key doesn't exist return an
+	 * empty value.
 	 *
-	 * @param sec_name		the key's section
-	 * @param key_name		the key's name
+	 * @param sec_name  The key's section
+	 * @param key_name  The key's name
 	 *
-	 * @return				nothing if the key doesn't exist
+	 * @tparam T  The key type. Either <code>int</code>, <code>float</code>
+	 *            or <code>std::string</code>
+	 *
+	 * @return An empty <code>std::optional<T></code> when the key doesn't
+	 *         exist
 	 */
 	template<class T>
-	inline std::optional<T> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept {
+	inline std::optional<T> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
 		static_assert(0, "T in get_opt<T> can be only one of the following: 'int', 'float' or 'std::string'");
 	}
 
 	template<>
-	inline std::optional<int> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept {
+	inline std::optional<int> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
 		if (exist(sec_name, key_name)) {
-			return c_api::ini_get_key_i(ini_, sec_name.c_str(), key_name.c_str());
+			return c_api::ini_get_key_i(m_ini, sec_name.c_str(), key_name.c_str());
 		}
 		return std::optional<int>();
 	}
 
 	template<>
-	inline std::optional<float> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept {
+	inline std::optional<float> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
 		if (exist(sec_name, key_name)) {
-			return c_api::ini_get_key_f(ini_, sec_name.c_str(), key_name.c_str());
+			return c_api::ini_get_key_f(m_ini, sec_name.c_str(), key_name.c_str());
 		}
 		return std::optional<float>();
 	}
 
 	template<>
-	inline std::optional<std::string> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept {
+	inline std::optional<std::string> get_opt(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
 		if (exist(sec_name, key_name)) {
 			char cstr[INI_STR_MAX_LENGTH];
-			c_api::ini_get_key_str(ini_, sec_name.c_str(), key_name.c_str(), cstr, INI_STR_MAX_LENGTH);
+			c_api::ini_get_key_str(m_ini, sec_name.c_str(), key_name.c_str(), cstr, INI_STR_MAX_LENGTH);
 			return std::string(cstr);
 		}
 		return std::optional<std::string>();
 	}
 
 	/**
-	 * check if the key exists
-	 * 
-	 * @param sec_name		the key's section
-	 * @param key_name		the key's name
-	 * 
-	 * @return				true if the key exists
+	 * Check whether or not the key exists.
+	 *
+	 * @param sec_name  The key's section
+	 * @param key_name  The key's name
+	 *
+	 * @return true if the key exists
 	 */
-	inline bool exist(const std::string& sec_name, const std::string& key_name) const noexcept {
-		return static_cast<bool>(c_api::ini_does_key_exist(ini_, sec_name.c_str(), key_name.c_str()));
+	inline bool exist(const std::string& sec_name, const std::string& key_name) const noexcept
+	{
+		return static_cast<bool>(c_api::ini_does_key_exist(m_ini, sec_name.c_str(), key_name.c_str()));
 	}
 
 	/**
-	 * serialize the keys to a file
-	 * 
-	 * @param path		the file's path
-	 * 
-	 * @return			true if the serialization process succeeded
+	 * Serialize to an ini file.
+	 *
+	 * @param path  The file's path
+	 *
+	 * @return true when the serialization process succeeded
 	 */
-	inline bool serialize(const std::string& path) const noexcept {
-		return static_cast<bool>(c_api::ini_serialize(ini_, path.c_str()));
+	inline bool serialize(const std::string& path) const noexcept
+	{
+		return static_cast<bool>(c_api::ini_serialize(m_ini, path.c_str()));
 	}
 
 	/**
-	 * parse an ini file and populate the class
-	 * 
-	 * @param path		the file's path
-	 * 
-	 * @return			true if the parsing process succeeded
+	 * Parse an ini file and populate this class instance with its data.
+	 *
+	 * @param path  The file's path
+	 *
+	 * @return true when the parsing process succeeded
 	 */
-	inline bool parse(const std::string& path) const noexcept {
-		return static_cast<bool>(c_api::ini_parse(ini_, path.c_str()));
+	inline bool parse(const std::string& path) const noexcept
+	{
+		return static_cast<bool>(c_api::ini_parse(m_ini, path.c_str()));
 	}
 
 private:
-	gsl::owner<c_api::INI*> ini_;
+	c_api::INI* m_ini;
 };
 
 } // libini
