@@ -24,10 +24,10 @@
 
 #include "ini.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>	/* isspace(), ... */
+#include <stdio.h>	/* fprintf() */
+#include <stdlib.h>	/* malloc(), free() */
+#include <string.h>	/* strcmp(), strcpy(), strcpy_s() */
+#include <ctype.h>	/* isspace(), iscntrl(), isalpha() */
 
 #define KVAL_TYPE_UNDEFINED	0
 #define KVAL_TYPE_INT		1
@@ -41,7 +41,7 @@ typedef struct INI_KEY {
 		float fval;
 		char sval[INI_STR_MAX_LENGTH];
 	};
-	int val_t;
+	int t_val;
 } INI_KEY;
 
 typedef struct INI_SECTION {
@@ -56,40 +56,46 @@ struct INI {
 };
 
 /* handle here what happens when memory allocation fails */
-#define alloc_check(x, msg) if (!x) { exit(EXIT_FAILURE); }
+#define alloc_check(x, msg) if (!x) { assert(0 && msg); exit(EXIT_FAILURE); }
 
-/*-------------------------------------------------------------------------
-							INI MANIPULATION
--------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------------
+	INI MANIPULATION
+------------------------------------------------------------------------------*/
 
-static void _key_set_i(INI_KEY* key, int val) {
+static void l_key_set_i(INI_KEY* key, int val)
+{
 	key->ival = val;
-	key->val_t = KVAL_TYPE_INT;
+	key->t_val = KVAL_TYPE_INT;
 }
 
-static void _key_set_f(INI_KEY* key, float val) {
+static void l_key_set_f(INI_KEY* key, float val)
+{
 	key->fval = val;
-	key->val_t = KVAL_TYPE_FLOAT;
+	key->t_val = KVAL_TYPE_FLOAT;
 }
 
-static void _key_set_str(INI_KEY* key, const char* val) {
+static void l_key_set_str(INI_KEY* key, const char* val)
+{
 	strcpy_s(key->sval, INI_STR_MAX_LENGTH, val);
-	key->val_t = KVAL_TYPE_STR;
+	key->t_val = KVAL_TYPE_STR;
 }
 
-static INI_KEY* _key_create(const char* name) {
+static INI_KEY* l_key_create(const char* name)
+{
 	INI_KEY* key = malloc(sizeof(INI_KEY));
 	alloc_check(key, "key creation: malloc failed\n");
 	strcpy_s(key->key_name, INI_STR_MAX_LENGTH, name);
-	key->val_t = KVAL_TYPE_UNDEFINED;
+	key->t_val = KVAL_TYPE_UNDEFINED;
 	return key;
 }
 
-static void _key_destroy(INI_KEY* key) {
+static void l_key_destroy(INI_KEY* key)
+{
 	free(key);
 }
 
-static INI_SECTION* _sec_create(const char* name) {
+static INI_SECTION* l_sec_create(const char* name)
+{
 	INI_SECTION* sec = malloc(sizeof(INI_SECTION));
 	alloc_check(sec, "section creation: malloc failed\n");
 	strcpy_s(sec->sec_name, INI_STR_MAX_LENGTH, name);
@@ -98,22 +104,25 @@ static INI_SECTION* _sec_create(const char* name) {
 	return sec;
 }
 
-static void _sec_destroy(INI_SECTION* sec) {
+static void l_sec_destroy(INI_SECTION* sec)
+{
 	for (int i = sec->keys_count - 1; i >= 0; i--) {
-		_key_destroy(sec->keys[i]);
+		l_key_destroy(sec->keys[i]);
 	}
 	free(sec->keys);
 	free(sec);
 }
 
-static void _sec_add_key(INI_SECTION* sec, INI_KEY* key) {
+static void l_sec_add_key(INI_SECTION* sec, INI_KEY* key)
+{
 	sec->keys = realloc(sec->keys, sizeof(INI_KEY));
 	alloc_check(sec->keys, "adding a key: realloc failed\n");
 	sec->keys[sec->keys_count] = key;
 	sec->keys_count++;
 }
 
-static INI_KEY* _sec_get_key(INI_SECTION* sec, const char* key_name) {
+static INI_KEY* l_sec_get_key(INI_SECTION* sec, const char* key_name)
+{
 	INI_KEY* key;
 	for (int i = 0; i < sec->keys_count; i++) {
 		key = sec->keys[i];
@@ -124,7 +133,8 @@ static INI_KEY* _sec_get_key(INI_SECTION* sec, const char* key_name) {
 	return NULL;
 }
 
-INI* ini_create(void) {
+INI* ini_create(void)
+{
 	INI* ini = malloc(sizeof(INI));
 	alloc_check(ini, "ini initialization: malloc failed\n");
 	ini->secs = NULL;
@@ -132,22 +142,25 @@ INI* ini_create(void) {
 	return ini;
 }
 
-void ini_destroy(INI* ini) {
+void ini_destroy(INI* ini)
+{
 	for (int i = ini->secs_count - 1; i >= 0; i--) {
-		_sec_destroy(ini->secs[i]);
+		l_sec_destroy(ini->secs[i]);
 	}
 	free(ini->secs);
 	free(ini);
 }
 
-static void _ini_add_sec(INI* ini, INI_SECTION* sec) {
+static void l_ini_add_sec(INI* ini, INI_SECTION* sec)
+{
 	ini->secs = realloc(ini->secs, sizeof(INI_SECTION));
 	alloc_check(ini->secs, "adding a section: realloc failed\n");
 	ini->secs[ini->secs_count] = sec;
 	ini->secs_count++;
 }
 
-static INI_SECTION* _ini_get_section(INI* ini, const char* sec_name) {
+static INI_SECTION* l_ini_get_section(INI* ini, const char* sec_name)
+{
 	INI_SECTION* sec;
 	for (int i = 0; i < ini->secs_count; i++) {
 		sec = ini->secs[i];
@@ -158,39 +171,48 @@ static INI_SECTION* _ini_get_section(INI* ini, const char* sec_name) {
 	return NULL;
 }
 
-static void _ini_add_key_generic(INI* ini, const char* sec_name, const char* key_name, INI_KEY* key) {
-	INI_SECTION* sec = _ini_get_section(ini, sec_name);
+static void l_ini_add_key_generic(INI* ini, const char* sec_name,
+								  const char* key_name, INI_KEY* key)
+{
+	INI_SECTION* sec = l_ini_get_section(ini, sec_name);
 	if (sec) {
-		_sec_add_key(sec, key);
+		l_sec_add_key(sec, key);
 	} else {
-		sec = _sec_create(sec_name);
-		_sec_add_key(sec, key);
-		_ini_add_sec(ini, sec);
+		sec = l_sec_create(sec_name);
+		l_sec_add_key(sec, key);
+		l_ini_add_sec(ini, sec);
 	}
 }
 
-void ini_add_key_i(INI* ini, const char* sec_name, const char* key_name, int val) {
-	INI_KEY* key = _key_create(key_name);
-	_key_set_i(key, val);
-	_ini_add_key_generic(ini, sec_name, key_name, key);
+void ini_add_key_i(INI* ini, const char* sec_name, const char* key_name,
+				   int val)
+{
+	INI_KEY* key = l_key_create(key_name);
+	l_key_set_i(key, val);
+	l_ini_add_key_generic(ini, sec_name, key_name, key);
 }
 
-void ini_add_key_f(INI* ini, const char* sec_name, const char* key_name, float val) {
-	INI_KEY* key = _key_create(key_name);
-	_key_set_f(key, val);
-	_ini_add_key_generic(ini, sec_name, key_name, key);
+void ini_add_key_f(INI* ini, const char* sec_name, const char* key_name,
+				   float val)
+{
+	INI_KEY* key = l_key_create(key_name);
+	l_key_set_f(key, val);
+	l_ini_add_key_generic(ini, sec_name, key_name, key);
 }
 
-void ini_add_key_str(INI* ini, const char* sec_name, const char* key_name, const char* val) {
-	INI_KEY* key = _key_create(key_name);
-	_key_set_str(key, val);
-	_ini_add_key_generic(ini, sec_name, key_name, key);
+void ini_add_key_str(INI* ini, const char* sec_name, const char* key_name,
+					 const char* val)
+{
+	INI_KEY* key = l_key_create(key_name);
+	l_key_set_str(key, val);
+	l_ini_add_key_generic(ini, sec_name, key_name, key);
 }
 
-int ini_does_key_exist(INI* ini, const char* sec_name, const char* key_name) {
-	INI_SECTION* sec = _ini_get_section(ini, sec_name);
+int ini_does_key_exist(INI* ini, const char* sec_name, const char* key_name)
+{
+	INI_SECTION* sec = l_ini_get_section(ini, sec_name);
 	if (sec) {
-		INI_KEY* key = _sec_get_key(sec, key_name);
+		INI_KEY* key = l_sec_get_key(sec, key_name);
 		if (key) {
 			return 1;
 		}
@@ -198,22 +220,25 @@ int ini_does_key_exist(INI* ini, const char* sec_name, const char* key_name) {
 	return 0;
 }
 
-int ini_get_key_i(INI* ini, const char* sec_name, const char* key_name) {
-	INI_SECTION* sec = _ini_get_section(ini, sec_name);
-	INI_KEY* key = _sec_get_key(sec, key_name);
+int ini_get_key_i(INI* ini, const char* sec_name, const char* key_name)
+{
+	INI_SECTION* sec = l_ini_get_section(ini, sec_name);
+	INI_KEY* key = l_sec_get_key(sec, key_name);
 	return key->ival;
 }
 
-float ini_get_key_f(INI* ini, const char* sec_name, const char* key_name) {
-	INI_SECTION* sec = _ini_get_section(ini, sec_name);
-	INI_KEY* key = _sec_get_key(sec, key_name);
+float ini_get_key_f(INI* ini, const char* sec_name, const char* key_name)
+{
+	INI_SECTION* sec = l_ini_get_section(ini, sec_name);
+	INI_KEY* key = l_sec_get_key(sec, key_name);
 	return key->fval;
 }
 
 void ini_get_key_str(INI* ini, const char* sec_name, const char* key_name,
-						char* out_buff, size_t buff_size) {
-	INI_SECTION* sec = _ini_get_section(ini, sec_name);
-	INI_KEY* key = _sec_get_key(sec, key_name);
+					 char* out_buff, size_t buff_size)
+{
+	INI_SECTION* sec = l_ini_get_section(ini, sec_name);
+	INI_KEY* key = l_sec_get_key(sec, key_name);
 	strcpy_s(out_buff, buff_size, key->sval);
 }
 
@@ -229,7 +254,8 @@ void ini_get_key_str(INI* ini, const char* sec_name, const char* key_name,
 	INI_KEY* key = sec->keys[0]; \
 	for (int ikey = 0; ikey < sec->keys_count; ikey++, key = sec->keys[ikey])
 
-int ini_serialize(INI* ini, const char* path) {
+int ini_serialize(INI* ini, const char* path)
+{
 	FILE* stream = fopen(path, "w");
 	if (!stream) return 0;
 	foreach_section(ini) {
@@ -237,7 +263,7 @@ int ini_serialize(INI* ini, const char* path) {
 			fprintf(stream, "[%s]\n", sec->sec_name);
 		}
 		foreach_key(sec) {
-			switch (key->val_t) {
+			switch (key->t_val) {
 				case KVAL_TYPE_INT:
 					fprintf(stream, "%s=%i\n", key->key_name, key->ival);
 					break;
@@ -258,13 +284,14 @@ int ini_serialize(INI* ini, const char* path) {
 	return 1;
 }
 
-/*-------------------------------------------------------------------------
-								PARSING
--------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------------
+	PARSING
+------------------------------------------------------------------------------*/
 
 #define getc_buffer(c, buff, pos) ((c) = (buff)[(pos)])
 
-static void _parse_buffer_stream(INI* ini, const char* path, char** out_buff) {
+static void l_parse_buffer_stream(INI* ini, const char* path, char** out_buff)
+{
 	FILE* stream = fopen(path, "r");
 	if (!stream) return;
 
@@ -286,10 +313,11 @@ static void _parse_buffer_stream(INI* ini, const char* path, char** out_buff) {
 	fclose(stream);
 }
 
-static void _parse_key(INI* ini, char* buff, long* pos, INI_SECTION** last_sec) {
+static void l_parse_key(INI* ini, char* buff, long* pos, INI_SECTION** last_sec)
+{
 	if (!(*last_sec)) {
-		*last_sec = _sec_create("");
-		_ini_add_sec(ini, *last_sec);
+		*last_sec = l_sec_create("");
+		l_ini_add_sec(ini, *last_sec);
 	}
 
 	char key_name[INI_STR_MAX_LENGTH] = "";
@@ -303,7 +331,7 @@ static void _parse_key(INI* ini, char* buff, long* pos, INI_SECTION** last_sec) 
 	key_name[keypos] = '\0';
 	(*pos)++;
 
-	INI_KEY* key = _key_create(key_name);
+	INI_KEY* key = l_key_create(key_name);
 
 	long valpos = 0;
 	memset(key_name, 0, INI_STR_MAX_LENGTH);
@@ -320,16 +348,17 @@ static void _parse_key(INI* ini, char* buff, long* pos, INI_SECTION** last_sec) 
 	key_name[valpos] = '\0';
 
 	if (is_str) {
-		_key_set_str(key, key_name);
+		l_key_set_str(key, key_name);
 	} else if (is_float) {
-		_key_set_f(key, (float)atof(key_name));
+		l_key_set_f(key, (float)atof(key_name));
 	} else {
-		_key_set_i(key, atoi(key_name));
+		l_key_set_i(key, atoi(key_name));
 	}
-	_sec_add_key(*last_sec, key);
+	l_sec_add_key(*last_sec, key);
 }
 
-static INI_SECTION* _parse_section(INI* ini, char* buff, long* pos) {
+static INI_SECTION* l_parse_section(INI* ini, char* buff, long* pos)
+{
 	/* parse section name */
 	char sec_name[INI_STR_MAX_LENGTH] = "";
 	int secpos = 0;
@@ -343,14 +372,15 @@ static INI_SECTION* _parse_section(INI* ini, char* buff, long* pos) {
 	(*pos)++;
 
 	/* set section */
-	INI_SECTION* sec = _sec_create(sec_name);
-	_ini_add_sec(ini, sec);
+	INI_SECTION* sec = l_sec_create(sec_name);
+	l_ini_add_sec(ini, sec);
 	return sec;
 }
 
-int ini_parse(INI* ini, const char* path) {
+int ini_parse(INI* ini, const char* path)
+{
 	char* buffer;
-	_parse_buffer_stream(ini, path, &buffer);
+	l_parse_buffer_stream(ini, path, &buffer);
 
 	INI_SECTION* last_sec = NULL;
 
@@ -374,10 +404,10 @@ int ini_parse(INI* ini, const char* path) {
 				pos++;
 			}
 		} else if (isalpha(c)) {
-			_parse_key(ini, buffer, &pos, &last_sec);
+			l_parse_key(ini, buffer, &pos, &last_sec);
 		} else if (c == '[') {
 			pos++;
-			last_sec = _parse_section(ini, buffer, &pos);
+			last_sec = l_parse_section(ini, buffer, &pos);
 		} else {
 			return 0;
 		}

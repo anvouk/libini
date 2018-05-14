@@ -22,14 +22,20 @@
  * THE SOFTWARE.
  */
 
+/**
+ * @file ini.h
+ * 
+ * libini core C API.
+ */
+
 #ifndef INI_H
 #define INI_H
 
 #include <stddef.h>	/* for size_t */
 
-#define INI_VERSION 0x1000
+#define INI_VERSION 0x1001
 
-#ifdef INI_DLL
+#if defined(_MSC_VER) && !defined(INI_BUILD_STATIC)
 #  ifdef INI_INTERNAL
 #    define INIAPI __declspec(dllexport)
 #  else
@@ -37,10 +43,6 @@
 #  endif
 #else
 #  define INIAPI extern
-#endif
-
-#if defined(__cplusplus) && !defined(INI_HPP)
-#  error for C++ projects use "ini.hpp"
 #endif
 
 #define INI_STR_MAX_LENGTH	128
