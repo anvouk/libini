@@ -14,10 +14,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ini.h">
+    <ClInclude Include="..\..\include\libini\ini.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="ini.hpp">
+    <ClInclude Include="..\..\include\libini\ini.hpp">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

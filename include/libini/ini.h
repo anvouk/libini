@@ -35,7 +35,7 @@
 
 #define INI_VERSION 0x1001
 
-#if defined(_MSC_VER) && !defined(INI_BUILD_STATIC)
+#if defined(_MSC_VER)
 #  ifdef INI_INTERNAL
 #    define INIAPI __declspec(dllexport)
 #  else
@@ -67,7 +67,7 @@ INIAPI int	ini_serialize	(INI* ini, const char* path);
 INIAPI int	ini_parse		(INI* ini, const char* path);
 
 /* C11 support required */
-#if !defined(__cplusplus) && __STDC_VERSION__ >= 201112L
+#if !defined(__cplusplus) && (__STDC_VERSION__ >= 201112L)
 
 #define ini_add_key(ini, sec, key, val) _Generic((val), \
 		int:			ini_add_key_i,	\

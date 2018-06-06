@@ -34,11 +34,13 @@
 #include <string>
 #include <optional>
 
-namespace libini {
+namespace libini
+{
+namespace c_api
+{
 
-namespace c_api {
-
-extern "C" {
+extern "C"
+{
 #include "ini.h"
 }
 

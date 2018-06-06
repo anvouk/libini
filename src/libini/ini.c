@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include "ini.h"
+#include "libini/ini.h"
 
 #include <stdio.h>	/* fprintf() */
 #include <stdlib.h>	/* malloc(), free() */
@@ -235,7 +235,7 @@ float ini_get_key_f(INI* ini, const char* sec_name, const char* key_name)
 }
 
 void ini_get_key_str(INI* ini, const char* sec_name, const char* key_name,
-					 char* out_buff, size_t buff_size)
+	char* out_buff, size_t buff_size)
 {
 	INI_SECTION* sec = ini_get_section(ini, sec_name);
 	INI_KEY* key = sec_get_key(sec, key_name);
