@@ -1,3 +1,5 @@
+> NOTE: This project has been deprecated.
+
 # libini
 A simple serialization/parser ini C library with a C++17 interface.
 
